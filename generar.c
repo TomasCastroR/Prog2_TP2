@@ -23,65 +23,6 @@ int cant_lineas(FILE *archivo){
     return lineas;
 }
 
-void eliminar_espacios(char *array){
-    int i = 0;
-    while (array[i]!='\0'){
-      i++;
-    }
-    while(array[i]!=' '){
-      i--;
-    }
-    while(array[i]==' '){
-      i--;
-    }
-    array[i+1]='\0';
-}
-
-void crear_array_localidades(FILE *archivo, int largo,char **localidades){
-    char basura[10], buffer[100];
-    for (int i=0; i < largo;++i){
-        fscanf(archivo,"%[^,],",basura);
-        fscanf(archivo,"%[^\n]",buffer);
-        eliminar_espacios(buffer);
-        localidades[i] = malloc(sizeof(char)*strlen(buffer)+1);
-        strcpy(localidades[i], buffer);
-    }
-}
-
-void liberar_memoria(char **array,int largo){
-    for(int i = 0; i < largo; ++i){
-        free(array[i]);
-    }
-}
-
-void generar_personas(int cantPersonas, int arrayRandom[]){
-    FILE *fPersonas,*fLocalidades,*fSalida;
-    char buffer[100],genero[2]={'M','F'},interes[4]={'F','M','A','N'};
-    char nombre[100], apellido[100];
-    int linea = 0, codigo, sexo, sexualidad, edad, cantLineas;
-    fLocalidades =fopen("codigoLocalidades.txt","r");
-    cantLineas = cant_lineas(fLocalidades);
-    char **localidades=(char**)malloc(sizeof(char*)*cantLineas);
-    rewind(fLocalidades);
-    crear_array_localidades(fLocalidades,cantLineas,localidades);
-    fclose(fLocalidades);
-    fPersonas =fopen("personas.txt","r");
-    fSalida =fopen("fSalida.txt","w");
-    for(int i = 0; i< cantPersonas; i++){
-        while(linea<arrayRandom[i]){
-            fgets(buffer,100,fPersonas);
-            linea++;
-        }
-        fscanf(fPersonas,"%[^,],%[^,],%d,%d,%d,%d", nombre, apellido,&codigo,&edad,&sexo,&sexualidad);
-        fprintf(fSalida,"%s, %s, %s, %d, %c, %c\n", nombre, apellido,localidades[codigo-1],edad,genero[sexo-1],interes[sexualidad-1]);
-    }
-    fclose(fPersonas);
-    fclose(fSalida);
-    liberar_memoria(localidades,cantLineas);
-    free(localidades);
-    free(arrayRandom);
-}
-
 void swap (int *a, int *b) {
     int temp = *a;
     *a = *b;
@@ -113,6 +54,104 @@ int* crear_array_random(int cantPersonas, int totalPersonas){
     return numsRandom;
 }
 
+void eliminar_espacios(char *array){
+    int i = 0;
+    while (array[i]!='\0'){
+      i++;
+    }
+    while(array[i]!=' '){
+      i--;
+    }
+    while(array[i]==' '){
+      i--;
+    }
+    array[i+1]='\0';
+}
+
+char** crear_array_localidades(char *fLocalidades) {
+    FILE *fileLocalidades;
+    fileLocalidades = fopen(fLocalidades, "r");
+    int cantLocalidades = cant_lineas(fileLocalidades);
+    rewind(fileLocalidades);
+    char **localidades = malloc (sizeof(char*)*cantLocalidades);
+    char basura[50], buffer[200];
+    for (int i = 0; i < cantLocalidades; ++i){
+        fscanf(fileLocalidades,"%[^,],%[^\n]",basura, buffer);
+        eliminar_espacios(buffer);
+        localidades[i] = malloc(sizeof(char)*(strlen(buffer)+1));
+        strcpy(localidades[i], buffer);
+    }
+
+    fclose(fileLocalidades);
+    return localidades;
+}
+
+void liberar_memoria(char **array,int largo){
+    for(int i = 0; i < largo; ++i)
+        free(array[i]);
+}
+
+char genero (int codigo) {
+    char caracter;
+    switch (codigo) {
+    case 1:
+        caracter = 'M';
+        break;
+    case 2:
+        caracter = 'F';
+        break; 
+    default:
+        break;
+    }
+    return caracter;
+}
+
+char interes (int codigo) {
+    char caracter;
+    switch (codigo) {
+    case 1:
+        caracter = 'F';
+        break;
+    case 2:
+        caracter = 'M';
+        break;
+    case 3:
+        caracter = 'A';
+        break;
+    case 4:
+        caracter = 'N';
+        break; 
+    default:
+        break;
+    }
+    return caracter;
+}
+
+void generar_personas(int cantPersonas, int totalPersonas, char *fEntrada, char *fLocalidades, char *fSalida){
+    FILE *filePersonas,*fileSalida;
+    char buffer[200], nombre[100], apellido[100];
+    int linea = 0, codigo, sexo, sexualidad, edad, cantLineas;
+
+    int *arrayRandom = crear_array_random(cantPersonas, totalPersonas);
+    char **localidades = crear_array_localidades(fLocalidades);
+
+    filePersonas =fopen(fEntrada,"r");
+    fileSalida =fopen(fSalida,"w");
+    for(int i = 0; i< cantPersonas; i++){
+        while(linea < arrayRandom[i]){
+            fgets(buffer, 200,filePersonas);
+            linea++;
+        }
+        fscanf(filePersonas,"%[^,],%[^,],%d,%d,%d,%d", nombre, apellido, &codigo, &edad, &sexo, &sexualidad);
+        fprintf(fileSalida,"%s, %s, %s, %d, %c, %c\n", nombre, apellido, localidades[codigo-1], edad, genero(sexo), interes(sexualidad));
+    }
+    fclose(filePersonas);
+    fclose(fileSalida);
+    liberar_memoria(localidades,cantLineas);
+    free(localidades);
+    free(arrayRandom);
+}
+
 int main(int argc, char **argv){
     if (argc != 4) {
         printf("No se ingreso la cantidad correcta de argumentos\n");
@@ -121,7 +160,7 @@ int main(int argc, char **argv){
     char *entrada = argv[1], *localidades = argv[2], *salida = argv[3];
     int cantPersonas=0, lineas=0;
     FILE *fEntrada;
-    fEntrada = fopene(entrada,"r");
+    fEntrada = fopen(entrada,"r");
     lineas = cant_lineas(fEntrada);
     fclose(fEntrada);
     printf("Ingrese la cantidad de personas: ");
@@ -130,6 +169,6 @@ int main(int argc, char **argv){
         printf("Por favor ingrese una cantidad menor a %d y mayor a 0: ", lineas);
         scanf("%d",&cantPersonas);
     }
-    generar_personas(cantPersonas, entrada, localidades, salida);
+    generar_personas(cantPersonas, lineas, entrada, localidades, salida);
     return 0;
 }
