@@ -82,34 +82,46 @@ void generar_personas(int cantPersonas, int arrayRandom[]){
     free(arrayRandom);
 }
 
-void crear_array_random(int arrayRandom[],int cantPersonas,int totalPersonas){
-    int *arrayIndex=(int*)malloc(sizeof(int)*totalPersonas);
-    int numRandom;
-    for(int i=0;i<totalPersonas;++i){
-        arrayIndex[i]=0;
-    }
+void swap (int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int comparar (const void *a, const void *b) {
+    int n = *(int*)a, m = *(int*)b;
+    return n - m;
+}
+
+int* crear_array_random(int cantPersonas, int totalPersonas){
+    int *arrayIndex = malloc(sizeof(int)*totalPersonas);
+    int *numsRandom = malloc(sizeof(int)*cantPersonas);
+    int nRandom, ultimo = totalPersonas;
+    for(int i = 0; i < totalPersonas; ++i)
+        arrayIndex[i] = i;
+
     srand((unsigned int)time(NULL));
-    for(int i=cantPersonas; i>0;--i){
-        numRandom = rand() % (totalPersonas);
-        while(arrayIndex[numRandom]!=0){
-            numRandom = rand() % (totalPersonas);
-        }
-        arrayIndex[numRandom]=-1;
+    for(int i = 0; i < cantPersonas; ++i){
+        nRandom = rand() % (totalPersonas);
+        numsRandom[i] = arrayIndex[nRandom];
+        swap(&arrayIndex[nRandom], &arrayIndex[ultimo-1]);
+        ultimo--;
     }
-    int idx=0;
-    for(int i=0;i<totalPersonas;++i){
-        if(arrayIndex[i]==-1){
-            arrayRandom[idx]=i;
-            idx++;
-        }
-    }
+    qsort(numsRandom, cantPersonas, sizeof(int), comparar);
     free(arrayIndex);
+
+    return numsRandom;
 }
 
 int main(int argc, char **argv){
+    if (argc != 4) {
+        printf("No se ingreso la cantidad correcta de argumentos\n");
+        return -1;
+    }
+    char *entrada = argv[1], *localidades = argv[2], *salida = argv[3];
     int cantPersonas=0, lineas=0;
     FILE *fEntrada;
-    fEntrada = fopen("personas.txt","r");
+    fEntrada = fopene(entrada,"r");
     lineas = cant_lineas(fEntrada);
     fclose(fEntrada);
     printf("Ingrese la cantidad de personas: ");
@@ -118,8 +130,6 @@ int main(int argc, char **argv){
         printf("Por favor ingrese una cantidad menor a %d y mayor a 0: ", lineas);
         scanf("%d",&cantPersonas);
     }
-    int *nums_random = malloc(sizeof(int)*cantPersonas);
-    crear_array_random(nums_random,cantPersonas,lineas);
-    generar_personas(cantPersonas,nums_random);
+    generar_personas(cantPersonas, entrada, localidades, salida);
     return 0;
 }
