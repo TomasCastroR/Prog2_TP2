@@ -43,7 +43,7 @@ int* crear_array_random(int cantPersonas, int totalPersonas){
 
     srand((unsigned int)time(NULL));
     for(int i = 0; i < cantPersonas; ++i){
-        nRandom = rand() % (totalPersonas);
+        nRandom = rand() % ultimo;
         numsRandom[i] = arrayIndex[nRandom];
         swap(&arrayIndex[nRandom], &arrayIndex[ultimo-1]);
         ultimo--;
@@ -137,13 +137,14 @@ void generar_personas(int cantPersonas, int totalPersonas, char *fEntrada, char 
 
     filePersonas =fopen(fEntrada,"r");
     fileSalida =fopen(fSalida,"w");
-    for(int i = 0; i< cantPersonas; i++){
-        while(linea < arrayRandom[i]){
-            fgets(buffer, 200,filePersonas);
-            linea++;
+    int cantElegidas = 0;
+    for(int linea = 0; linea < totalPersonas && cantElegidas < cantPersonas; linea++){
+        if (linea == arrayRandom[cantElegidas]) {
+            fscanf(filePersonas,"%[^,],%[^,],%d,%d,%d,%d\n", nombre, apellido, &codigo, &edad, &sexo, &sexualidad);
+            fprintf(fileSalida,"%s, %s, %s, %d, %c, %c\n", nombre, apellido, localidades[codigo-1], edad, genero(sexo), interes(sexualidad));
+            cantElegidas++;
         }
-        fscanf(filePersonas,"%[^,],%[^,],%d,%d,%d,%d", nombre, apellido, &codigo, &edad, &sexo, &sexualidad);
-        fprintf(fileSalida,"%s, %s, %s, %d, %c, %c\n", nombre, apellido, localidades[codigo-1], edad, genero(sexo), interes(sexualidad));
+        else fscanf(filePersonas, "%[^\n]\n", buffer);
     }
     fclose(filePersonas);
     fclose(fileSalida);
